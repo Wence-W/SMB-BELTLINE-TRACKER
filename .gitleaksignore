@@ -1,0 +1,5 @@
+# False positive, reviewed 2026-09-28: reference/original/convex/auth.ts line 12
+# is the literal header text "-----BEGIN PRIVATE KEY-----" inside the original's
+# decodePrivateKey() string-reformatting helper. No key material is present.
+# Suppressed by exact fingerprint only; the private-key rule stays active.
+89f90ddf356f031a0ac02ceb52e7bb898309dc94:reference/original/convex/auth.ts:private-key:12
