@@ -1,0 +1,11 @@
+node_modules/
+dist/
+.env
+.env.*
+!.env.example
+.convex/
+*.log
+backups/
+exports/
+playwright-report/
+test-results/

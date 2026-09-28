@@ -1,0 +1,112 @@
+// Copies helper functions that the original app defines INSIDE component files
+// (so they can't be imported) VERBATIM into packages/parity/oracles/extracted/,
+// with the SHA-256 of the source file in the header. The copies are the test
+// oracles the rebuild must match (plan section 5.1, step 2).
+//
+// Usage:
+//   bun run packages/parity/extract-oracles.ts          write the files
+//   bun run packages/parity/extract-oracles.ts --check  fail if any is stale
+import { createHash } from "node:crypto";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { join, relative } from "node:path";
+import ts from "typescript";
+
+const ROOT = join(import.meta.dirname, "..", "..");
+const ORIGINAL = join(ROOT, "reference", "original");
+const OUT_DIR = join(import.meta.dirname, "oracles", "extracted");
+
+type Target = {
+  out: string;
+  source: string; // relative to reference/original
+  names: string[]; // top-level declarations to copy, in source order
+  preamble: string; // imports the copied code needs (the original's own)
+};
+
+export const TARGETS: Target[] = [
+  {
+    out: "staffProductivity.ts",
+    source: "src/components/productivity/StaffProductivityTab.tsx",
+    names: ["RawCase", "dateOnly", "PRECERT_TYPES", "precertOngoingEvents", "DayColumn", "buildDayColumns"],
+    preamble: 'import { toDateInputValue, type PeriodRange } from "@/lib/intakeTypes";',
+  },
+  {
+    out: "reportsTab.ts",
+    source: "src/components/productivity/ReportsTab.tsx",
+    names: ["dateOnly", "BILLING_CATEGORIES", "PRECERT_TYPES", "RawPrecertCase", "precertOngoingEvents"],
+    preamble: "",
+  },
+];
+
+function declarationName(statement: ts.Statement): string | null {
+  if (
+    (ts.isFunctionDeclaration(statement) ||
+      ts.isInterfaceDeclaration(statement) ||
+      ts.isTypeAliasDeclaration(statement)) &&
+    statement.name
+  ) {
+    return statement.name.text;
+  }
+  if (ts.isVariableStatement(statement)) {
+    const decl = statement.declarationList.declarations[0];
+    return decl && ts.isIdentifier(decl.name) ? decl.name.text : null;
+  }
+  return null;
+}
+
+export function render(target: Target): string {
+  const path = join(ORIGINAL, target.source);
+  const text = readFileSync(path, "utf8");
+  const sha = createHash("sha256").update(text).digest("hex");
+  const source = ts.createSourceFile(path, text, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+  const found = new Map<string, string>();
+  const typeNames = new Set<string>();
+  for (const statement of source.statements) {
+    const name = declarationName(statement);
+    if (name && target.names.includes(name) && !found.has(name)) {
+      if (ts.isInterfaceDeclaration(statement) || ts.isTypeAliasDeclaration(statement)) typeNames.add(name);
+      // getFullText keeps the leading comments: they document the rules.
+      found.set(name, statement.getFullText(source).replace(/^\n+/, ""));
+    }
+  }
+  const missing = target.names.filter(name => !found.has(name));
+  if (missing.length) throw new Error(`${target.source}: declarations not found: ${missing.join(", ")}`);
+
+  const body = target.names.map(name => found.get(name)).join("\n\n");
+  return `// AUTO-EXTRACTED ORACLE. DO NOT EDIT.
+// Verbatim copy of top-level declarations from the ORIGINAL app:
+//   reference/original/${target.source}
+//   sha256 ${sha}
+// Regenerate with: bun run packages/parity/extract-oracles.ts
+/* biome-ignore-all lint: verbatim third-party copy */
+${target.preamble}
+
+${body}
+
+export { ${target.names.filter(n => !typeNames.has(n)).join(", ")} };
+export type { ${target.names.filter(n => typeNames.has(n)).join(", ")} };
+`;
+}
+
+if (import.meta.main) {
+  const check = process.argv.includes("--check");
+  mkdirSync(OUT_DIR, { recursive: true });
+  let stale = false;
+  for (const target of TARGETS) {
+    const outPath = join(OUT_DIR, target.out);
+    const content = render(target);
+    if (check) {
+      let current = "";
+      try {
+        current = readFileSync(outPath, "utf8");
+      } catch {}
+      if (current !== content) {
+        console.error(`stale: ${relative(ROOT, outPath)}`);
+        stale = true;
+      }
+    } else {
+      writeFileSync(outPath, content);
+      console.log(`wrote ${relative(ROOT, outPath)}`);
+    }
+  }
+  if (stale) process.exit(1);
+}

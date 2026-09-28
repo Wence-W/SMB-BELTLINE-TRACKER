@@ -1,0 +1,44 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.11
+      - run: bun install --frozen-lockfile
+      - name: Generated API types are current
+        run: bun run scripts/gen-api-types.ts --check
+      - name: Extracted oracles match the original source
+        run: bun run extract-oracles --check
+      - name: Typecheck
+        run: bun run typecheck
+      - name: Lint (Biome + function-wrapper guard)
+        run: bun run lint
+      - name: Tests (unit, access, SEC-01, parity oracles)
+        run: bun run test
+      - name: Tests under a UTC+8 viewer timezone
+        run: TZ=Asia/Manila bun run test
+      - name: Web build
+        run: bun run build:web
+        env:
+          VITE_CONVEX_URL: https://placeholder.invalid
+
+  secret-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

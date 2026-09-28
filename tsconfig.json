@@ -1,22 +1,22 @@
 {
+  // Typechecks the web app, the parity harness, tests and scripts. The Convex
+  // backend has its own convex/tsconfig.json. reference/original is only
+  // pulled in where the parity oracles import it.
   "compilerOptions": {
     "target": "ES2022",
-    "useDefineForClassFields": true,
-    "lib": ["DOM", "DOM.Iterable", "ES2022"],
-    "allowJs": false,
-    "skipLibCheck": true,
-    "esModuleInterop": true,
-    "allowSyntheticDefaultImports": true,
-    "strict": true,
-    "forceConsistentCasingInFileNames": true,
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "module": "ESNext",
     "moduleResolution": "Bundler",
-    "resolveJsonModule": true,
-    "isolatedModules": true,
-    "noEmit": true,
     "jsx": "react-jsx",
-    "types": ["vitest/globals"]
+    "strict": true,
+    "noEmit": true,
+    "isolatedModules": true,
+    "skipLibCheck": true,
+    "allowImportingTsExtensions": true,
+    "resolveJsonModule": true,
+    "types": ["node", "vite/client"],
+    "baseUrl": ".",
+    "paths": { "@/*": ["reference/original/src/*"] }
   },
-  "include": ["src", "vite.config.ts", "server"],
-  "references": [{ "path": "./tsconfig.node.json" }]
+  "include": ["apps/web/src", "packages", "tests", "scripts", "vitest.config.ts", "apps/web/vite.config.ts"]
 }

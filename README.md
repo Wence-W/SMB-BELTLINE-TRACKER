@@ -1,63 +1,30 @@
-# SMB Beltline Tracker
+# SMB Beltline Tracker: rebuild
 
-A secure, production-oriented operational tracker scaffold for bariatric verification, intake, billing, and call audits.
+A feature-for-feature rebuild of the SMB Beltline Tracker (Bari Ops Tracker). It is **separate from, and never connected to,** the production app on Viktor Spaces.
 
-## Status
+- **Plan:** [`docs/rebuild/STEP2-PLAN.md`](docs/rebuild/STEP2-PLAN.md). The source analysis is in [`STEP1-INVENTORY.md`](docs/rebuild/STEP1-INVENTORY.md).
+- **Status:** Phase 0 (foundations); see [`PHASE0.md`](docs/rebuild/PHASE0.md).
+- **Decisions and findings:** [`DECISIONS.md`](docs/rebuild/DECISIONS.md).
 
-This repository started as an empty scaffold. The codebase now includes a working application foundation with:
+**Private repo. No PHI, ever:** tests and fixtures are synthetic only.
 
-- React 19 + Vite + TypeScript frontend
-- Tailwind-based dark operational layout
-- Express API with JWT-based auth and protected routes
-- Socket.IO real-time connection hook
-- Seeded cases, intake, billing, and archive data
-- Business-rule tests for QA status, case filters, intake totals, and productivity cleanup
+## Layout
 
-## Important security note
+| Path | What |
+|---|---|
+| `convex/` | Rebuilt backend. Every function goes through `convex/lib/functions.ts`. |
+| `apps/web/` | Rebuilt React app |
+| `packages/parity/` | Test oracles from the original code, the verbatim extractor, the synthetic fixture generator |
+| `tests/` | Backend access tests (in-memory Convex) and parity tests |
+| `reference/original/` | The 2026-09-25 source export, read-only. Used only as the test oracle and the reference instance. Never deployed to production. |
 
-This project is not connected to production systems or live patient data. Synthetic test accounts only. Do not place PHI in this repo or in public environment variables. The project is designed for an owner-approved security/privacy review before any live patient or recording data is introduced.
+## Commands
 
-## Quick start
-
-1. Install dependencies:
-   - `npm install`
-2. Start the app:
-   - `npm run dev`
-3. Open the app at `http://localhost:5173`
-4. Sign in with the demo account:
-   - Email: `admin@smb.local`
-   - Password: `changeMe123!`
-
-## Scripts
-
-- `npm run dev` — runs the Express API and Vite frontend together
-- `npm run build` — production build
-- `npm run test` — Vitest suite
-- `npm run server` — runs the backend only
-
-## Environment
-
-Use `.env.example` for non-secret placeholders and local config. Keep all secrets out of the repo.
-
-## Security and review requirements
-
-Before introducing real patient identifiers, recordings, or PHI, the owner must confirm:
-
-- hosting provider suitability and contract review
-- admin allowlist and account provisioning workflow
-- privacy/security review for Tier 3 data handling
-- migration scope and no-live-data policy
-
-## Implementation boundaries
-
-This scaffold is intentionally a strong operational foundation, not a complete full-parity replacement for every legacy workflow from a missing source system. The initial implementation focuses on:
-
-- secure auth and protected routes
-- dashboard shell and module navigation
-- cases with filters and staffing model
-- intake logging with totals
-- bookings tracker and billing overview
-- verification and archive pages
-- business logic regression tests
-
-The exact final parity list and migration tasks remain subject to owner approval and source-system inventory before any real data migration.
+```sh
+bun install
+bun run check            # typecheck + lint + function-wrapper guard + tests
+bun run test             # tests only (set TZ=Asia/Manila to test as a UTC+8 viewer)
+bun run fixtures [seed]  # write synthetic JSONL fixtures
+bun run extract-oracles  # refresh verbatim oracle copies from reference/original
+bun run dev:web          # web app; needs apps/web/.env.local (see .env.example)
+```
