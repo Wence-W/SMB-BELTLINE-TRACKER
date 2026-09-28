@@ -134,6 +134,7 @@ export const intakeResultValidator = literals(INTAKE_RESULTS);
 // ─── Billing (reference/original/src/components/productivity/BillingTab.tsx:19-24)
 
 export const BILLING_CATEGORIES = ["new_claims", "ar_aging", "emails", "boost_billing"] as const;
+export type BillingCategory = (typeof BILLING_CATEGORIES)[number];
 export const billingCategoryValidator = literals(BILLING_CATEGORIES);
 
 // ─── Booked Tracker (reference/original/convex/appointmentOptions.ts) ────────

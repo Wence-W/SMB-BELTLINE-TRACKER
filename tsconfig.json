@@ -24,6 +24,6 @@
     "scripts",
     "vitest.config.ts",
     "apps/web/vite.config.ts",
-    "apps/web/src/lib/historical.ts"
+    "apps/web/src/lib/historical.ts", "apps/web/src/lib/billing.ts", "apps/web/src/lib/dates.ts"
   ]
 }

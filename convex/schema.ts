@@ -103,6 +103,37 @@ export default defineSchema({
     legacyId,
   }).index("by_optionKey", ["optionKey"]),
 
+  // ─── Phase 2: Billing (plus the daily metrics row it shares with Intake) ──
+  // Staff stay free-text strings exactly as in the original (reports match on
+  // them); `staffPersonId` records who that is when the row was written here.
+  billingEntries: defineTable({
+    staff: v.string(),
+    staffPersonId: v.optional(v.id("people")),
+    date: v.string(), // YYYY-MM-DD
+    // Optional: historical aggregate "Billing Tasks" rows have no category.
+    category: v.optional(v.string()),
+    tasksCompleted: v.number(),
+    notes: v.optional(v.string()),
+    createdAt: v.string(),
+    legacyId,
+  })
+    .index("by_staff", ["staff"])
+    .index("by_date", ["date"]),
+  // One row per (staff, date). Billing writes faxDocs/newPatientIntake; the
+  // Intake Team tab (Phase 3) writes the rest.
+  intakeDailyMetrics: defineTable({
+    staff: v.string(),
+    staffPersonId: v.optional(v.id("people")),
+    date: v.string(),
+    emailsSent: v.number(),
+    ghlChats: v.number(),
+    newPatientIntake: v.number(),
+    callAudits: v.number(),
+    faxDocs: v.number(),
+    updatedAt: v.string(),
+    legacyId,
+  }).index("by_staff_date", ["staff", "date"]),
+
   // Dev/staging only: stands in for a real email transport until the owner
   // picks a BAA-covered provider (plan G0). Readable only through an internal
   // query; refused when DEPLOYMENT_ENV=production.

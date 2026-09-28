@@ -43,6 +43,7 @@ type Ids = {
   memberId: string;
   precertProviderId: string;
   storageId: string;
+  billingEntryId: string;
 };
 const SAMPLE_ARGS: Record<string, (ids: Ids) => Record<string, unknown>> = {
   "access:me": () => ({}),
@@ -74,6 +75,18 @@ const SAMPLE_ARGS: Record<string, (ids: Ids) => Record<string, unknown>> = {
   "settings:generatePhotoUploadUrl": () => ({}),
   "settings:setProfilePhoto": ids => ({ storageId: ids.storageId }),
   "settings:removeProfilePhoto": () => ({}),
+  // Phase 2
+  "billing:listEntries": () => ({}),
+  "billing:addEntry": ids => ({ staffPersonId: ids.personId, date: "2026-09-01", category: "emails", count: 1 }),
+  "billing:updateEntry": ids => ({ id: ids.billingEntryId, date: "2026-09-01", category: "emails", count: 1 }),
+  "billing:deleteEntry": ids => ({ id: ids.billingEntryId }),
+  "dailyMetrics:list": () => ({}),
+  "dailyMetrics:setBillingCounts": ids => ({
+    staffPersonId: ids.personId,
+    date: "2026-09-01",
+    faxDocs: 1,
+    newPatientIntake: 1,
+  }),
 };
 
 describe("SEC-01: no public function is callable signed out", () => {
@@ -100,6 +113,13 @@ describe("SEC-01: no public function is callable signed out", () => {
           memberId: await ctx.db.insert("departmentMembers", { departmentId, memberName: "M", order: 0 }),
           precertProviderId: await ctx.db.insert("precertProviders", { name: "P" }),
           storageId: await ctx.storage.store(new Blob(["x"])),
+          billingEntryId: await ctx.db.insert("billingEntries", {
+            staff: "S",
+            date: "2026-09-01",
+            category: "emails",
+            tasksCompleted: 1,
+            createdAt: "2026-09-01T00:00:00.000Z",
+          }),
         };
       });
       const args = SAMPLE_ARGS[path]?.({ userId: target.userId, personId: target.personId!, ...docs }) ?? {};

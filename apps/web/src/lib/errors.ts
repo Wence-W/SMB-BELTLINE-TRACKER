@@ -15,6 +15,9 @@ const MESSAGES: Record<string, string> = {
   DISPLAY_NAME_REQUIRED: "Enter the person's name.",
   ALREADY_PROVISIONED: "That email already has an account.",
   NOT_FOUND: "That item no longer exists.",
+  NOT_ON_TEAM: "That person isn't on this team's roster.",
+  INVALID_DATE: "Choose a valid date.",
+  INVALID_COUNT: "Enter a whole number.",
 };
 
 export function errorCode(error: unknown): string | undefined {

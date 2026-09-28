@@ -19,6 +19,9 @@ export const AUDITED_TABLES = [
   "reverificationRequesters",
   "piedmontEpicProviders",
   "appointmentDropdownOptions",
+  // Phase 2
+  "billingEntries",
+  "intakeDailyMetrics",
 ] as const satisfies readonly TableNames[];
 
 const SYSTEM_FIELDS = new Set(["_id", "_creationTime"]);

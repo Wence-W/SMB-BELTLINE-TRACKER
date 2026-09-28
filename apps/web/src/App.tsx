@@ -3,7 +3,7 @@
 // the original sidebar. Modules appear here as their phases land.
 import { useAuthActions } from "@convex-dev/auth/react";
 import { useConvexAuth } from "convex/react";
-import { BookOpen, History, ListChecks, LogOut, Settings, Users } from "lucide-react";
+import { BookOpen, DollarSign, History, ListChecks, LogOut, Settings, Users } from "lucide-react";
 import { type ReactNode, useState } from "react";
 import { BrowserRouter, Link, Navigate, Route, Routes, useLocation, useSearchParams } from "react-router-dom";
 import {
@@ -18,6 +18,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { useIsAdmin, useMe } from "@/lib/access";
 import { cn } from "@/lib/utils";
 import { ListsPage } from "@/pages/admin/ListsPage";
+import { BillingPage } from "@/pages/BillingPage";
 import { PeoplePage } from "@/pages/admin/PeoplePage";
 import { DirectoryPage } from "@/pages/DirectoryPage";
 import { HistoricalActivityTab } from "@/pages/HistoricalActivityPage";
@@ -58,6 +59,8 @@ function Sidebar() {
   const items: NavItem[] = [
     { to: "/dashboard?tab=historical", label: "Historical Activity", icon: <History className="size-4" /> },
     { to: "/dashboard?tab=directory", label: "Intake Directory", icon: <BookOpen className="size-4" /> },
+    { to: "/dashboard?tab=billing", label: "Billing", icon: <DollarSign className="size-4" /> },
+    { to: "/dashboard?tab=billing-activity", label: "Activity Log", icon: null, indent: true },
   ];
   const adminItems: NavItem[] = [
     { to: "/admin/people", label: "People & access", icon: <Users className="size-4" /> },
@@ -99,6 +102,8 @@ function Dashboard() {
   const tab = params.get("tab") ?? DEFAULT_TAB;
   if (tab === "historical") return <HistoricalActivityTab />;
   if (tab === "directory") return <DirectoryPage />;
+  if (tab === "billing") return <BillingPage view="overview" />;
+  if (tab === "billing-activity") return <BillingPage view="log" />;
   return <p className="text-sm text-muted-foreground">This part of the tracker hasn't been rebuilt yet.</p>;
 }
 

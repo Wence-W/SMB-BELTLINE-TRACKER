@@ -30,8 +30,8 @@
 ## Not verified yet
 
 - **The signed-in screens have not been exercised in a browser.** That needs a Convex deployment: this environment's network policy blocks Convex's local backend download (`version.convex.dev`), and no owner project exists yet (G0). They typecheck and build. The first run on the owner's dev deployment should walk each screen.
-- CI has not been observed on GitHub from here.
+- CI on GitHub passed for this commit (run 36433097978).
 
 ## Next
 
-**Phase 2 (Billing) needs the owner's written approval.** Still open from Phase 0: G0, the reference project, the history rewrite on `main`, and decisions D1, D2, D3 (urgent, see F1), D8 and D10.
+**Phase 2 (Billing) was approved on 2026-09-28; see PHASE2.md.** Still open from Phase 0: G0, the reference project, the history rewrite on `main`, and decisions D1, D2, D3 (urgent, see F1), D8 and D10.
