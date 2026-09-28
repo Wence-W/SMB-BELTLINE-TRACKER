@@ -3,7 +3,7 @@
 A feature-for-feature rebuild of the SMB Beltline Tracker (Bari Ops Tracker). It is **separate from, and never connected to,** the production app on Viktor Spaces.
 
 - **Plan:** [`docs/rebuild/STEP2-PLAN.md`](docs/rebuild/STEP2-PLAN.md). The source analysis is in [`STEP1-INVENTORY.md`](docs/rebuild/STEP1-INVENTORY.md).
-- **Status:** Phase 0 (foundations); see [`PHASE0.md`](docs/rebuild/PHASE0.md).
+- **Status:** Phase 1 (reference modules) done; see [`PHASE1.md`](docs/rebuild/PHASE1.md) and [`PHASE0.md`](docs/rebuild/PHASE0.md).
 - **Decisions and findings:** [`DECISIONS.md`](docs/rebuild/DECISIONS.md).
 
 **Private repo. No PHI, ever:** tests and fixtures are synthetic only.

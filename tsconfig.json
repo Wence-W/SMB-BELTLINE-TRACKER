@@ -18,5 +18,12 @@
     "baseUrl": ".",
     "paths": { "@/*": ["reference/original/src/*"] }
   },
-  "include": ["apps/web/src", "packages", "tests", "scripts", "vitest.config.ts", "apps/web/vite.config.ts"]
+  "include": [
+    "packages",
+    "tests",
+    "scripts",
+    "vitest.config.ts",
+    "apps/web/vite.config.ts",
+    "apps/web/src/lib/historical.ts"
+  ]
 }

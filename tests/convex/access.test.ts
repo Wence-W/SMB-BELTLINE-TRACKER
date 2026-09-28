@@ -37,9 +37,11 @@ describe("wrapper access rules (SEC-01, SEC-03)", () => {
     });
     expect(await as.query(api.access.me, {})).toEqual({
       displayName: "staff",
+      accountName: null,
       email: "staff@example.invalid",
       teams: ["intake"],
       capabilities: ["call_audit_access"],
+      photoUrl: null,
     });
   });
 

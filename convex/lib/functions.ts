@@ -119,6 +119,14 @@ export function capabilityMutation(capability: Capability) {
 
 // Actions can't read the database directly; the viewer is resolved through an
 // internal query with the same rules.
+export const authedAction = customAction(
+  rawAction,
+  customCtx(async ctx => {
+    const viewer: Viewer = await ctx.runQuery(internal.access.viewerForAction, {});
+    return { viewer };
+  }),
+);
+
 export function capabilityAction(capability: Capability) {
   return customAction(
     rawAction,

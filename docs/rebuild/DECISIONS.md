@@ -8,13 +8,15 @@ Every deliberate deviation from production behaviour needs the owner's sign-off 
 | D2 | Weekends in reports | **Open** | Replicate (Staff Daily Productivity only) | |
 | D3 | Timezone of record | **Open, now urgent** | Replicate | See finding F1 below |
 | D4 | Self-signup | Approved with plan (2026-09-28) | Off, enforced on the server | `convex/auth.ts` `passwordProfile` |
-| D5 | Deletes and roster edits admin-only | Approved with plan | Admin-only (deviation) | Applies from each module's phase |
+| D5 | Deletes and roster edits admin-only | Approved with plan | Admin-only (deviation) | Applied in Phase 1 to the Pre-Cert Provider and Request-by lists and all team rosters |
 | D6 | Legacy Task tool | Approved with plan | Read-only | |
 | D7 | Starter app | Approved with plan | Discarded | Removed in Phase 0 |
 | D8 | Viktor email cron | **Open (inputs needed)** | Rebuilt in-app | Needs schedule, recipients, templates |
 | D9 | Historical Activity JSON | Approved with plan | Carried over | |
 | D10 | Legacy `quaint-parrot-788` | **Open** | Drop the tab | |
 | SEC | Session idle timeout | **Open** | 30 min server + browser; 12 h maximum | `convex/auth.ts` |
+| P1-a | Intake Team roster = people with the Intake team (needs a login email) | **Open** | As built | Consequence of the single-roster design; see PHASE1.md |
+| P1-b | Managed lists edited on an admin page until Phases 3–5 restore the inline Manage buttons | **Open** | As built | |
 | SEC | Password minimum length | **Open** | 12 characters | `convex/auth.ts` |
 
 ## Findings made during Phase 0

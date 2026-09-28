@@ -21,6 +21,7 @@ const ALLOWED_BUILDERS = new Set([
   "capabilityQuery",
   "capabilityMutation",
   "capabilityAction",
+  "authedAction",
   "auditedInternalMutation",
   "internalQuery",
   "internalMutation",

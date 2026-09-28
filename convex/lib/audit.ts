@@ -7,7 +7,19 @@ import { nowIso } from "./time";
 // (cases, intakeEntries, appointments, callAudits, ...). auditLog itself and
 // devOutbox are deliberately excluded; auth tables are written by Convex Auth's
 // own internal functions, outside these wrappers.
-export const AUDITED_TABLES = ["people", "roles"] as const satisfies readonly TableNames[];
+export const AUDITED_TABLES = [
+  "people",
+  "roles",
+  // Phase 1
+  "clinicWidgets",
+  "clinicProviders",
+  "departmentWidgets",
+  "departmentMembers",
+  "precertProviders",
+  "reverificationRequesters",
+  "piedmontEpicProviders",
+  "appointmentDropdownOptions",
+] as const satisfies readonly TableNames[];
 
 const SYSTEM_FIELDS = new Set(["_id", "_creationTime"]);
 

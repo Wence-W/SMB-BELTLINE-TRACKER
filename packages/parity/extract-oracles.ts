@@ -35,6 +35,18 @@ export const TARGETS: Target[] = [
     names: ["dateOnly", "BILLING_CATEGORIES", "PRECERT_TYPES", "RawPrecertCase", "precertOngoingEvents"],
     preamble: "",
   },
+  {
+    out: "appointmentOptions.ts",
+    source: "convex/appointmentOptions.ts",
+    names: ["OptionType", "optionKey", "unique", "effectiveValues"],
+    preamble: "",
+  },
+  {
+    out: "historicalActivity.ts",
+    source: "src/components/productivity/HistoricalActivityTab.tsx",
+    names: ["MonthRow", "monthLabel", "trendDirection"],
+    preamble: "",
+  },
 ];
 
 function declarationName(statement: ts.Statement): string | null {

@@ -1,229 +1,163 @@
-// Phase 0 shell: sign-in, password setup/reset by emailed code, and the
-// signed-in account view. There is deliberately no sign-up screen (plan D4);
-// the server rejects sign-up regardless. Module screens arrive from Phase 1.
+// App shell. Routes keep the original's URL scheme (/dashboard?tab=...,
+// /settings) so bookmarks and muscle memory carry over; sidebar labels match
+// the original sidebar. Modules appear here as their phases land.
 import { useAuthActions } from "@convex-dev/auth/react";
-import { useConvexAuth, useQuery } from "convex/react";
-import { Component, type ReactNode, useEffect, useState } from "react";
-import { api } from "../../../convex/_generated/api";
+import { useConvexAuth } from "convex/react";
+import { BookOpen, History, ListChecks, LogOut, Settings, Users } from "lucide-react";
+import { type ReactNode, useState } from "react";
+import { BrowserRouter, Link, Navigate, Route, Routes, useLocation, useSearchParams } from "react-router-dom";
+import {
+  ACCESS_MESSAGES,
+  AccessBoundary,
+  AuthCard,
+  SetPasswordForm,
+  SignInForm,
+  useIdleSignOut,
+} from "@/components/auth/AuthScreens";
+import { Toaster } from "@/components/ui/sonner";
+import { useIsAdmin, useMe } from "@/lib/access";
+import { cn } from "@/lib/utils";
+import { ListsPage } from "@/pages/admin/ListsPage";
+import { PeoplePage } from "@/pages/admin/PeoplePage";
+import { DirectoryPage } from "@/pages/DirectoryPage";
+import { HistoricalActivityTab } from "@/pages/HistoricalActivityPage";
+import { SettingsPage } from "@/pages/SettingsPage";
 
-const IDLE_SIGN_OUT_MS = 30 * 60 * 1000; // matches convex/auth.ts SESSION_IDLE_MS
+const DEFAULT_TAB = "directory";
 
-const ACCESS_MESSAGES: Record<string, string> = {
-  UNAUTHENTICATED: "Your session has ended. Please sign in again.",
-  EMAIL_NOT_VERIFIED: "Finish setting your password with the emailed code to activate your account.",
-  NOT_PROVISIONED: "This account isn't active in the tracker. Ask an admin to enable it.",
-  FORBIDDEN: "You don't have access to this.",
-};
+type NavItem = { to: string; label: string; icon: ReactNode; indent?: boolean };
 
-function errorCode(error: unknown): string | undefined {
-  return (error as { data?: { code?: string } } | null)?.data?.code;
-}
-
-class AccessBoundary extends Component<
-  { children: ReactNode; fallback: (code?: string) => ReactNode },
-  { error: unknown }
-> {
-  state = { error: null as unknown };
-  static getDerivedStateFromError(error: unknown) {
-    return { error };
-  }
-  render() {
-    return this.state.error ? this.props.fallback(errorCode(this.state.error)) : this.props.children;
-  }
-}
-
-function useIdleSignOut(enabled: boolean) {
-  const { signOut } = useAuthActions();
-  useEffect(() => {
-    if (!enabled) return;
-    let timer = window.setTimeout(() => void signOut(), IDLE_SIGN_OUT_MS);
-    const reset = () => {
-      window.clearTimeout(timer);
-      timer = window.setTimeout(() => void signOut(), IDLE_SIGN_OUT_MS);
-    };
-    const events = ["mousedown", "keydown", "touchstart", "scroll"] as const;
-    for (const e of events) window.addEventListener(e, reset, { passive: true });
-    return () => {
-      window.clearTimeout(timer);
-      for (const e of events) window.removeEventListener(e, reset);
-    };
-  }, [enabled, signOut]);
-}
-
-function Card({ title, children }: { title: string; children: ReactNode }) {
+function NavLink({ item }: { item: NavItem }) {
+  const location = useLocation();
+  const [path, query] = item.to.split("?");
+  const tab = new URLSearchParams(query ?? "").get("tab");
+  const current =
+    new URLSearchParams(location.search).get("tab") ?? (location.pathname === "/dashboard" ? DEFAULT_TAB : null);
+  const active = location.pathname === path && (tab === null || tab === current);
   return (
-    <div className="min-h-screen grid place-items-center bg-slate-50 p-4">
-      <div className="w-full max-w-sm rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-        <h1 className="mb-4 text-lg font-semibold text-slate-900">{title}</h1>
-        {children}
+    <Link
+      to={item.to}
+      className={cn(
+        "flex items-center gap-2 rounded-md px-3 py-2 text-sm",
+        item.indent && "pl-8",
+        active
+          ? "bg-sidebar-accent font-medium text-sidebar-accent-foreground"
+          : "text-sidebar-foreground hover:bg-sidebar-accent",
+      )}
+    >
+      {item.icon}
+      {item.label}
+    </Link>
+  );
+}
+
+function Sidebar() {
+  const me = useMe();
+  const isAdmin = useIsAdmin();
+  const { signOut } = useAuthActions();
+  const items: NavItem[] = [
+    { to: "/dashboard?tab=historical", label: "Historical Activity", icon: <History className="size-4" /> },
+    { to: "/dashboard?tab=directory", label: "Intake Directory", icon: <BookOpen className="size-4" /> },
+  ];
+  const adminItems: NavItem[] = [
+    { to: "/admin/people", label: "People & access", icon: <Users className="size-4" /> },
+    { to: "/admin/lists", label: "Dropdown lists", icon: <ListChecks className="size-4" /> },
+  ];
+  return (
+    <aside className="flex w-64 shrink-0 flex-col border-r border-sidebar-border bg-sidebar p-3">
+      <div className="px-3 py-2 text-sm font-semibold">SMB Beltline Tracker</div>
+      <nav className="mt-2 flex flex-1 flex-col gap-1">
+        {items.map(item => (
+          <NavLink key={item.to} item={item} />
+        ))}
+        {isAdmin && (
+          <>
+            <p className="mt-4 px-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">Admin</p>
+            {adminItems.map(item => (
+              <NavLink key={item.to} item={item} />
+            ))}
+          </>
+        )}
+      </nav>
+      <div className="border-t border-sidebar-border pt-2">
+        <NavLink item={{ to: "/settings", label: "Settings", icon: <Settings className="size-4" /> }} />
+        <button
+          type="button"
+          onClick={() => void signOut()}
+          className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-sidebar-foreground hover:bg-sidebar-accent"
+        >
+          <LogOut className="size-4" />
+          Sign out{me ? ` (${me.accountName ?? me.displayName})` : ""}
+        </button>
       </div>
+    </aside>
+  );
+}
+
+function Dashboard() {
+  const [params] = useSearchParams();
+  const tab = params.get("tab") ?? DEFAULT_TAB;
+  if (tab === "historical") return <HistoricalActivityTab />;
+  if (tab === "directory") return <DirectoryPage />;
+  return <p className="text-sm text-muted-foreground">This part of the tracker hasn't been rebuilt yet.</p>;
+}
+
+function AdminOnly({ children }: { children: ReactNode }) {
+  const me = useMe();
+  if (me === undefined) return null;
+  return me.capabilities.includes("admin") ? children : <Navigate to="/dashboard" replace />;
+}
+
+function Shell() {
+  return (
+    <div className="flex min-h-screen bg-background">
+      <Sidebar />
+      <main className="flex-1 overflow-x-auto p-6">
+        <Routes>
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/settings" element={<SettingsPage />} />
+          <Route
+            path="/admin/people"
+            element={
+              <AdminOnly>
+                <PeoplePage />
+              </AdminOnly>
+            }
+          />
+          <Route
+            path="/admin/lists"
+            element={
+              <AdminOnly>
+                <ListsPage />
+              </AdminOnly>
+            }
+          />
+          <Route path="*" element={<Navigate to="/dashboard" replace />} />
+        </Routes>
+      </main>
     </div>
   );
 }
 
-const input = "w-full rounded-md border border-slate-300 px-3 py-2 text-sm";
-const button = "w-full rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white disabled:opacity-50";
-const link = "text-sm text-slate-600 underline";
-
-function SignInForm({ onSetPassword }: { onSetPassword: () => void }) {
-  const { signIn } = useAuthActions();
-  const [error, setError] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
-  return (
-    <Card title="Sign in to SMB Beltline Tracker">
-      <form
-        className="space-y-3"
-        onSubmit={async event => {
-          event.preventDefault();
-          setBusy(true);
-          setError(null);
-          const form = new FormData(event.currentTarget);
-          try {
-            await signIn("password", {
-              flow: "signIn",
-              email: String(form.get("email") ?? ""),
-              password: String(form.get("password") ?? ""),
-            });
-          } catch {
-            // One generic message: never reveal whether the email exists.
-            setError("Email or password is incorrect.");
-          } finally {
-            setBusy(false);
-          }
-        }}
-      >
-        <input className={input} name="email" type="email" autoComplete="username" placeholder="Email" required />
-        <input
-          className={input}
-          name="password"
-          type="password"
-          autoComplete="current-password"
-          placeholder="Password"
-          required
-        />
-        {error && <p className="text-sm text-red-700">{error}</p>}
-        <button className={button} type="submit" disabled={busy}>
-          Sign in
-        </button>
-      </form>
-      <button className={`${link} mt-4`} type="button" onClick={onSetPassword}>
-        First time here, or forgot your password?
-      </button>
-    </Card>
-  );
-}
-
-function SetPasswordForm({ onDone }: { onDone: () => void }) {
-  const { signIn } = useAuthActions();
-  const [email, setEmail] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
-  return (
-    <Card title="Set your password">
-      {email === null ? (
-        <form
-          className="space-y-3"
-          onSubmit={async event => {
-            event.preventDefault();
-            setBusy(true);
-            setError(null);
-            const value = String(new FormData(event.currentTarget).get("email") ?? "");
-            try {
-              await signIn("password", { flow: "reset", email: value });
-            } catch {
-              // Same outcome either way, so the form can't be used to probe accounts.
-            } finally {
-              setBusy(false);
-              setEmail(value);
-            }
-          }}
-        >
-          <p className="text-sm text-slate-600">We'll email you an 8-digit code if this address has an account.</p>
-          <input
-            className={input}
-            name="email"
-            type="email"
-            autoComplete="username"
-            placeholder="Work email"
-            required
-          />
-          <button className={button} type="submit" disabled={busy}>
-            Send code
-          </button>
-        </form>
-      ) : (
-        <form
-          className="space-y-3"
-          onSubmit={async event => {
-            event.preventDefault();
-            setBusy(true);
-            setError(null);
-            const form = new FormData(event.currentTarget);
-            try {
-              await signIn("password", {
-                flow: "reset-verification",
-                email,
-                code: String(form.get("code") ?? ""),
-                newPassword: String(form.get("newPassword") ?? ""),
-              });
-            } catch {
-              setError("That code didn't work, or the password is shorter than 12 characters.");
-            } finally {
-              setBusy(false);
-            }
-          }}
-        >
-          <input
-            className={input}
-            name="code"
-            inputMode="numeric"
-            autoComplete="one-time-code"
-            placeholder="8-digit code"
-            required
-          />
-          <input
-            className={input}
-            name="newPassword"
-            type="password"
-            autoComplete="new-password"
-            minLength={12}
-            placeholder="New password (12+ characters)"
-            required
-          />
-          {error && <p className="text-sm text-red-700">{error}</p>}
-          <button className={button} type="submit" disabled={busy}>
-            Set password and sign in
-          </button>
-        </form>
-      )}
-      <button className={`${link} mt-4`} type="button" onClick={onDone}>
-        Back to sign in
-      </button>
-    </Card>
-  );
-}
-
-function Account() {
-  const me = useQuery(api.access.me);
+function SignedIn() {
   const { signOut } = useAuthActions();
-  if (me === undefined) return <Card title="Loading…">{null}</Card>;
   return (
-    <Card title={`Signed in as ${me.displayName}`}>
-      <dl className="space-y-1 text-sm text-slate-700">
-        <div>
-          <dt className="inline font-medium">Teams: </dt>
-          <dd className="inline">{me.teams.join(", ") || "none"}</dd>
-        </div>
-        <div>
-          <dt className="inline font-medium">Access: </dt>
-          <dd className="inline">{me.capabilities.join(", ") || "staff"}</dd>
-        </div>
-      </dl>
-      <p className="mt-4 text-sm text-slate-500">Tracker modules arrive from Phase 1.</p>
-      <button className={`${button} mt-4`} type="button" onClick={() => void signOut()}>
-        Sign out
-      </button>
-    </Card>
+    <AccessBoundary
+      fallback={code => (
+        <AuthCard title="Access">
+          <p className="text-sm text-slate-700">{ACCESS_MESSAGES[code ?? ""] ?? "Something went wrong."}</p>
+          <button
+            className="mt-4 w-full rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white"
+            type="button"
+            onClick={() => void signOut()}
+          >
+            Sign out
+          </button>
+        </AuthCard>
+      )}
+    >
+      <Shell />
+    </AccessBoundary>
   );
 }
 
@@ -231,28 +165,21 @@ export function App() {
   const { isLoading, isAuthenticated } = useConvexAuth();
   const [settingPassword, setSettingPassword] = useState(false);
   useIdleSignOut(isAuthenticated);
-  const { signOut } = useAuthActions();
 
-  if (isLoading) return <Card title="Loading…">{null}</Card>;
-  if (!isAuthenticated) {
-    return settingPassword ? (
+  let content: ReactNode;
+  if (isLoading) content = <AuthCard title="Loading…">{null}</AuthCard>;
+  else if (!isAuthenticated) {
+    content = settingPassword ? (
       <SetPasswordForm onDone={() => setSettingPassword(false)} />
     ) : (
       <SignInForm onSetPassword={() => setSettingPassword(true)} />
     );
-  }
+  } else content = <SignedIn />;
+
   return (
-    <AccessBoundary
-      fallback={code => (
-        <Card title="Access">
-          <p className="text-sm text-slate-700">{ACCESS_MESSAGES[code ?? ""] ?? "Something went wrong."}</p>
-          <button className={`${button} mt-4`} type="button" onClick={() => void signOut()}>
-            Sign out
-          </button>
-        </Card>
-      )}
-    >
-      <Account />
-    </AccessBoundary>
+    <BrowserRouter>
+      {content}
+      <Toaster />
+    </BrowserRouter>
   );
 }

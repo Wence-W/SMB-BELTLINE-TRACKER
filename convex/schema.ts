@@ -3,9 +3,10 @@ import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 import { capabilityValidator, teamValidator } from "./lib/enums";
 
-// Phase 0 foundation tables only. Module tables (cases, intake, billing,
-// appointments, call audits, ...) arrive with their phases; see
-// docs/rebuild/STEP2-PLAN.md section 3 for the old -> new mapping.
+// Tables arrive phase by phase; see docs/rebuild/STEP2-PLAN.md section 3 for
+// the old -> new mapping. Migrated tables carry `legacyId` (the original
+// row's _id) so reconciliation and rollback deltas can be traced (plan 3.3).
+const legacyId = v.optional(v.string());
 export default defineSchema({
   ...authTables,
 
@@ -20,6 +21,9 @@ export default defineSchema({
     teams: v.array(teamValidator),
     active: v.boolean(),
     legacyNames: v.array(v.string()),
+    // Profile photo (Settings). Accepted only through settings.setProfilePhoto,
+    // which validates the file (closes the original's S3 storage-ID hole).
+    profilePhotoId: v.optional(v.id("_storage")),
     createdAt: v.string(),
     updatedAt: v.string(),
   })
@@ -48,6 +52,56 @@ export default defineSchema({
   })
     .index("by_table_doc", ["table", "docId"])
     .index("by_actor", ["actorUserId"]),
+
+  // ─── Phase 1: Intake Directory (1:1 with the original) ───────────────────
+  clinicWidgets: defineTable({
+    name: v.string(),
+    address: v.string(),
+    fax: v.string(),
+    order: v.number(),
+    legacyId,
+  }),
+  clinicProviders: defineTable({
+    clinicId: v.id("clinicWidgets"),
+    providerName: v.string(),
+    order: v.number(),
+    legacyId,
+  }).index("by_clinic", ["clinicId"]),
+  departmentWidgets: defineTable({
+    name: v.string(),
+    extension: v.optional(v.string()),
+    slackChannel: v.optional(v.string()),
+    order: v.number(),
+    legacyId,
+  }),
+  departmentMembers: defineTable({
+    departmentId: v.id("departmentWidgets"),
+    memberName: v.string(),
+    locationTag: v.optional(v.string()),
+    assignment: v.optional(v.string()),
+    order: v.number(),
+    legacyId,
+  }).index("by_department", ["departmentId"]),
+
+  // ─── Phase 1: managed dropdown lists (1:1 with the original) ─────────────
+  precertProviders: defineTable({ name: v.string(), legacyId }).index("by_name", ["name"]),
+  reverificationRequesters: defineTable({ name: v.string(), legacyId }).index("by_name", ["name"]),
+  piedmontEpicProviders: defineTable({ name: v.string(), legacyId }).index("by_name", ["name"]),
+
+  // Booked Tracker Scheduler / Provider choices. The original kept built-in
+  // defaults in CODE (staff and physician names) plus override rows; here the
+  // defaults are rows too (`builtIn: true`, loaded by the migration), ordered
+  // by `order`, so the effective list is identical without names in code.
+  appointmentDropdownOptions: defineTable({
+    optionType: v.union(v.literal("scheduler"), v.literal("provider")),
+    value: v.string(),
+    location: v.optional(v.string()),
+    optionKey: v.string(),
+    active: v.boolean(),
+    builtIn: v.boolean(),
+    order: v.number(),
+    legacyId,
+  }).index("by_optionKey", ["optionKey"]),
 
   // Dev/staging only: stands in for a real email transport until the owner
   // picks a BAA-covered provider (plan G0). Readable only through an internal

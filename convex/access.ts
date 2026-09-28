@@ -40,12 +40,33 @@ export const me = authedQuery({
   args: {},
   handler: async ctx => {
     const person = await ctx.db.get(ctx.viewer.personId);
+    const user = await ctx.db.get(ctx.viewer.userId);
     return {
       displayName: ctx.viewer.displayName,
+      // Self-edited account name (Settings), separate from the roster name,
+      // exactly as the original kept users.name apart from staff.name.
+      accountName: user?.name ?? null,
       email: ctx.viewer.email,
       teams: person?.teams ?? [],
       capabilities: ctx.viewer.capabilities,
+      photoUrl: person?.profilePhotoId ? await ctx.storage.getUrl(person.profilePhotoId) : null,
     };
+  },
+});
+
+/**
+ * A team's roster names (e.g. Directory > Intake Team, and the staff pickers
+ * in later phases). Replaces the original's intakeStaff / billingStaff /
+ * staff name lists; managing membership is admin-only via setPersonTeams.
+ */
+export const listTeam = authedQuery({
+  args: { team: teamValidator },
+  handler: async (ctx, { team }) => {
+    const people = await ctx.db.query("people").collect();
+    return people
+      .filter(person => person.active && person.teams.includes(team))
+      .map(person => ({ personId: person._id, displayName: person.displayName }))
+      .sort((a, b) => a.displayName.localeCompare(b.displayName));
   },
 });
 
