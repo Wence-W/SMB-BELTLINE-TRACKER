@@ -1,7 +1,13 @@
 import { authTables } from "@convex-dev/auth/server";
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
-import { capabilityValidator, teamValidator } from "./lib/enums";
+import {
+  capabilityValidator,
+  intakeCategoryReadValidator,
+  intakeDirectionValidator,
+  intakeResultValidator,
+  teamValidator,
+} from "./lib/enums";
 
 // Tables arrive phase by phase; see docs/rebuild/STEP2-PLAN.md section 3 for
 // the old -> new mapping. Migrated tables carry `legacyId` (the original
@@ -133,6 +139,42 @@ export default defineSchema({
     updatedAt: v.string(),
     legacyId,
   }).index("by_staff_date", ["staff", "date"]),
+
+  // ─── Phase 3: Intake ─────────────────────────────────────────────────────
+  // PHI-adjacent: patientId and notes. The audit log records field names only.
+  intakeEntries: defineTable({
+    staff: v.string(),
+    staffPersonId: v.optional(v.id("people")),
+    date: v.string(), // YYYY-MM-DD
+    direction: intakeDirectionValidator,
+    // Legacy categories stay readable; new rows use the active ones only.
+    category: intakeCategoryReadValidator,
+    // "" is what the original stored when an edit cleared the Resolution.
+    result: v.optional(v.union(intakeResultValidator, v.literal(""))),
+    count: v.number(),
+    notes: v.optional(v.string()),
+    createdAt: v.string(),
+    patientId: v.optional(v.string()),
+    otherInfo: v.optional(v.string()),
+    legacyId,
+  })
+    .index("by_staff", ["staff"])
+    .index("by_date", ["date"]),
+  // Piedmont: Epic referral log. PHI-adjacent: refId, mrNumber, chart.
+  piedmontEpicReferrals: defineTable({
+    date: v.string(),
+    refId: v.string(),
+    mrNumber: v.string(),
+    chart: v.string(),
+    toProvider: v.string(),
+    referringProvider: v.string(),
+    createdAt: v.string(),
+    legacyId,
+  }).index("by_date", ["date"]),
+  // Names left out of the Intake productivity views. The original hard-coded
+  // one former staff member's name; here it is data (loaded by the migration,
+  // edited by admins) so no name lives in code.
+  intakeReportExclusions: defineTable({ name: v.string(), legacyId }).index("by_name", ["name"]),
 
   // Dev/staging only: stands in for a real email transport until the owner
   // picks a BAA-covered provider (plan G0). Readable only through an internal

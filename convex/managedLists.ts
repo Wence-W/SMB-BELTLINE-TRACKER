@@ -11,7 +11,14 @@ import { ConvexError, v } from "convex/values";
 import type { MutationCtx } from "./_generated/server";
 import { authedQuery, capabilityMutation } from "./lib/functions";
 
-export const MANAGED_LISTS = ["precertProviders", "reverificationRequesters", "piedmontEpicProviders"] as const;
+export const MANAGED_LISTS = [
+  "precertProviders",
+  "reverificationRequesters",
+  "piedmontEpicProviders",
+  // Phase 3: names left out of the Intake productivity views (the original
+  // hard-coded this list in IntakeTeamTab). Admin-only, like the others.
+  "intakeReportExclusions",
+] as const;
 export type ManagedList = (typeof MANAGED_LISTS)[number];
 const listValidator = v.union(...MANAGED_LISTS.map(list => v.literal(list)));
 

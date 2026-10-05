@@ -6,7 +6,7 @@
 // mutation that writes only its own fields and keeps the rest from the stored
 // row, on the server. The stored result is the same as the original's for the
 // same inputs, without the chance of overwriting a concurrent edit.
-import { v } from "convex/values";
+import { ConvexError, v } from "convex/values";
 import { authedMutation, authedQuery } from "./lib/functions";
 import { requireIsoDate, requireTally, requireTeamMember } from "./lib/staff";
 import { nowIso } from "./lib/time";
@@ -63,5 +63,18 @@ export const setBillingCounts = authedMutation({
       callAudits: 0,
       ...counts,
     });
+  },
+});
+
+/**
+ * Raw Entries "Delete". As in the original, this deletes the WHOLE day's
+ * metrics row for that person, not just the one metric line clicked (plan
+ * IN-04, parity; the screen now asks for confirmation and says so).
+ */
+export const deleteMetric = authedMutation({
+  args: { id: v.id("intakeDailyMetrics") },
+  handler: async (ctx, { id }) => {
+    if (!(await ctx.db.get(id))) throw new ConvexError({ code: "NOT_FOUND" });
+    await ctx.db.delete(id);
   },
 });

@@ -3,7 +3,7 @@
 // the original sidebar. Modules appear here as their phases land.
 import { useAuthActions } from "@convex-dev/auth/react";
 import { useConvexAuth } from "convex/react";
-import { BookOpen, DollarSign, History, ListChecks, LogOut, Settings, Users } from "lucide-react";
+import { BookOpen, DollarSign, History, Inbox, ListChecks, LogOut, Settings, Users } from "lucide-react";
 import { type ReactNode, useState } from "react";
 import { BrowserRouter, Link, Navigate, Route, Routes, useLocation, useSearchParams } from "react-router-dom";
 import {
@@ -22,6 +22,7 @@ import { BillingPage } from "@/pages/BillingPage";
 import { PeoplePage } from "@/pages/admin/PeoplePage";
 import { DirectoryPage } from "@/pages/DirectoryPage";
 import { HistoricalActivityTab } from "@/pages/HistoricalActivityPage";
+import { IntakePage } from "@/pages/IntakePage";
 import { SettingsPage } from "@/pages/SettingsPage";
 
 const DEFAULT_TAB = "directory";
@@ -58,7 +59,11 @@ function Sidebar() {
   const { signOut } = useAuthActions();
   const items: NavItem[] = [
     { to: "/dashboard?tab=historical", label: "Historical Activity", icon: <History className="size-4" /> },
-    { to: "/dashboard?tab=directory", label: "Intake Directory", icon: <BookOpen className="size-4" /> },
+    // Same nesting and (swapped) routes as the original: "Intake" opens the
+    // reports view and its "Activity Log" child is ?tab=intake-reports.
+    { to: "/dashboard?tab=intake", label: "Intake", icon: <Inbox className="size-4" /> },
+    { to: "/dashboard?tab=directory", label: "Intake Directory", icon: <BookOpen className="size-4" />, indent: true },
+    { to: "/dashboard?tab=intake-reports", label: "Activity Log", icon: null, indent: true },
     { to: "/dashboard?tab=billing", label: "Billing", icon: <DollarSign className="size-4" /> },
     { to: "/dashboard?tab=billing-activity", label: "Activity Log", icon: null, indent: true },
   ];
@@ -102,6 +107,8 @@ function Dashboard() {
   const tab = params.get("tab") ?? DEFAULT_TAB;
   if (tab === "historical") return <HistoricalActivityTab />;
   if (tab === "directory") return <DirectoryPage />;
+  if (tab === "intake") return <IntakePage view="reports" />;
+  if (tab === "intake-reports") return <IntakePage view="log" />;
   if (tab === "billing") return <BillingPage view="overview" />;
   if (tab === "billing-activity") return <BillingPage view="log" />;
   return <p className="text-sm text-muted-foreground">This part of the tracker hasn't been rebuilt yet.</p>;

@@ -15,6 +15,8 @@ export * as ytdConsults from "../../../reference/original/src/lib/ytdConsults";
 export * as appointmentOptionsBackend from "./extracted/appointmentOptions";
 export * as billingTab from "./extracted/billingTab";
 export * as dateRangeFilter from "./extracted/dateRangeFilter";
+export * as intakeTeamTab from "./extracted/intakeTeamTab";
+export * as exportUtils from "./extracted/exportUtils";
 export * as historicalActivity from "./extracted/historicalActivity";
 export * as reportsTab from "./extracted/reportsTab";
 export * as staffProductivity from "./extracted/staffProductivity";

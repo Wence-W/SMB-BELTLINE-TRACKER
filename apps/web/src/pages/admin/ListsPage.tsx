@@ -16,6 +16,7 @@ const LISTS = [
   { list: "precertProviders", title: "Pre-Cert Provider" },
   { list: "reverificationRequesters", title: "Reverification “Request by”" },
   { list: "piedmontEpicProviders", title: "Piedmont: Epic “To Provider”" },
+  { list: "intakeReportExclusions", title: "Names left out of Intake productivity" },
 ] as const;
 const LOCATIONS = ["Atlanta", "Stockbridge", "Newnan"] as const;
 

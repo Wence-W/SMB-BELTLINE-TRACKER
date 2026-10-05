@@ -22,6 +22,8 @@ type Target = {
   preamble: string; // imports the copied code needs (the original's own)
   // Helpers defined INSIDE a component body (closures). Copied verbatim into a
   // factory whose parameters bind the component state they close over.
+  // `names` may be inner functions, consts (useMemo/useCallback values run
+  // through no-op stand-ins, so the copied statements stay verbatim) or types.
   closures?: { component: string; names: string[]; factory: string; params: string };
 };
 
@@ -58,6 +60,94 @@ export const TARGETS: Target[] = [
         "dailyMetrics: { staff: string; date: string; faxDocs: number; newPatientIntake: number }[] | undefined, " +
         "staffNames: string[]",
     },
+  },
+  {
+    out: "intakeTeamTab.ts",
+    source: "src/components/productivity/IntakeTeamTab.tsx",
+    names: ["METRIC_FIELDS", "MetricKey"],
+    preamble: [
+      'import { inDateRange } from "./dateRangeFilter";',
+      "import {",
+      "  BOOST_CATEGORIES,",
+      "  INBOUND_CATEGORY_BUCKETS,",
+      "  INTAKE_CATEGORIES,",
+      "  OUTBOUND_CATEGORY_BUCKETS,",
+      "  categoryLabel,",
+      "  resultOptionsForDirection,",
+      "  type IntakeDirection,",
+      '} from "@/lib/intakeTypes";',
+      "type OracleEntry = {",
+      "  _id: string; staff: string; date: string; direction: string; category: string; result?: string;",
+      "  count: number; notes?: string; createdAt: string; patientId?: string;",
+      "};",
+      "type OracleMetric = {",
+      "  _id: string; staff: string; date: string; emailsSent: number; ghlChats: number;",
+      "  newPatientIntake: number; callAudits: number; faxDocs: number;",
+      "};",
+    ].join("\n"),
+    closures: {
+      component: "IntakeTeamTab",
+      names: [
+        "logSheetEntries",
+        "StaffSummary",
+        "EXCLUDED_STAFF_NAMES",
+        "summarize",
+        "LogRow",
+        "combinedLog",
+        "rawEntryRows",
+        "filteredLog",
+        "reportPeriod",
+        "reportDateRange",
+        "inReportRange",
+        "reportEntries",
+        "reportBoostEntries",
+        "reportMetrics",
+        "bucketCounts",
+        "resultCounts",
+        "inboundCategory",
+        "outboundCategory",
+        "inboundResult",
+        "outboundResult",
+        "ADMIN_TASK_ORDER",
+        "boostRows",
+        "adminTaskRows",
+        "adminTaskTotal",
+      ],
+      factory: "makeIntakeTab",
+      params: [
+        "allEntries: OracleEntry[]",
+        "allMetrics: OracleMetric[]",
+        "logSheetDateFilter: string",
+        "logSheetFrom: string",
+        "logSheetTo: string",
+        "logSheetStaffFilter: string",
+        'logSheetDirectionFilter: "" | IntakeDirection',
+        "logDateFilter: string",
+        "logFrom: string",
+        "logTo: string",
+        "reportStaff: string",
+        "reportDateFilter: string",
+        "reportFrom: string",
+        "reportTo: string",
+      ].join(", "),
+    },
+  },
+  {
+    out: "exportUtils.ts",
+    source: "src/lib/exportUtils.ts",
+    names: [
+      "formatDate",
+      "IntakeExportRow",
+      "INTAKE_EXPORT_HEADERS",
+      "intakeRowToArray",
+      "PiedmontEpicReferralExportRow",
+      "PIEDMONT_EPIC_EXPORT_HEADERS",
+      "piedmontEpicRowToArray",
+    ],
+    preamble: [
+      'import { categoryLabel, resultLabel } from "@/lib/intakeTypes";',
+      'import { formatDateEST } from "@/lib/dateFormat";',
+    ].join("\n"),
   },
   {
     out: "dateRangeFilter.ts",
@@ -124,14 +214,24 @@ export function render(target: Target): string {
     );
     if (!fn?.body) throw new Error(`${target.source}: component ${component} not found`);
     const inner = new Map<string, string>();
+    const innerTypes = new Set<string>();
     for (const st of fn.body.statements) {
-      if (ts.isFunctionDeclaration(st) && st.name && names.includes(st.name.text)) {
-        inner.set(st.name.text, st.getFullText(source).replace(/^\n+/, ""));
+      const name = declarationName(st);
+      if (name && names.includes(name) && !inner.has(name)) {
+        if (ts.isTypeAliasDeclaration(st) || ts.isInterfaceDeclaration(st)) innerTypes.add(name);
+        inner.set(name, st.getFullText(source).replace(/^\n+/, ""));
       }
     }
     const lost = names.filter(name => !inner.has(name));
     if (lost.length) throw new Error(`${target.source}: closures not found in ${component}: ${lost.join(", ")}`);
-    body += `\n\nfunction ${factory}(${params}) {\n${names.map(n => inner.get(n)).join("\n\n")}\n  return { ${names.join(", ")} };\n}`;
+    const usesHooks = names.some(n => /\buse(Memo|Callback)\(/.test(inner.get(n) ?? ""));
+    const shims = usesHooks
+      ? "  // Stand-ins for React hooks: compute the value once, as one render would.\n" +
+        "  const useMemo = <T,>(compute: () => T, _deps: unknown[]): T => compute();\n" +
+        "  const useCallback = <T,>(callback: T, _deps: unknown[]): T => callback;\n"
+      : "";
+    const values = names.filter(n => !innerTypes.has(n));
+    body += `\n\nfunction ${factory}(${params}) {\n${shims}${names.map(n => inner.get(n)).join("\n\n")}\n  return { ${values.join(", ")} };\n}`;
     exportNames.push(factory);
   }
   return `// AUTO-EXTRACTED ORACLE. DO NOT EDIT.

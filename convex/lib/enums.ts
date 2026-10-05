@@ -77,6 +77,7 @@ export const TASK_PRIORITIES = ["low", "medium", "high", "urgent"] as const;
 // ─── Intake (reference/original/src/lib/intakeTypes.ts:14-80) ───────────────
 
 export const INTAKE_DIRECTIONS = ["inbound", "outbound"] as const;
+export type IntakeDirection = (typeof INTAKE_DIRECTIONS)[number];
 export const intakeDirectionValidator = literals(INTAKE_DIRECTIONS);
 
 export const INTAKE_CATEGORIES = [
@@ -97,6 +98,8 @@ export const INTAKE_CATEGORIES = [
   "boost_cancelled",
 ] as const;
 export const intakeCategoryValidator = literals(INTAKE_CATEGORIES);
+export type IntakeCategory = (typeof INTAKE_CATEGORIES)[number];
+export const BOOST_CATEGORY_VALUES = ["boost_booked", "boost_no_show", "boost_cancelled"] as const;
 // Deprecated 2026-07-17; hidden from the form but still mapped into report
 // buckets, so they must stay readable.
 export const LEGACY_INTAKE_CATEGORIES = [
@@ -130,6 +133,7 @@ export const INTAKE_RESULTS = [
   "not_interested_wcb",
 ] as const;
 export const intakeResultValidator = literals(INTAKE_RESULTS);
+export type IntakeResult = (typeof INTAKE_RESULTS)[number];
 
 // ─── Billing (reference/original/src/components/productivity/BillingTab.tsx:19-24)
 

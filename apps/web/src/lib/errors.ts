@@ -18,6 +18,12 @@ const MESSAGES: Record<string, string> = {
   NOT_ON_TEAM: "That person isn't on this team's roster.",
   INVALID_DATE: "Choose a valid date.",
   INVALID_COUNT: "Enter a whole number.",
+  CATEGORY_REQUIRED: "Select a category, or set Category to None and Count to 0",
+  NOTHING_TO_SAVE: "Enter a category count or at least one metric value",
+  INVALID_RESULT: "Choose a Result that fits this category.",
+  INVALID_CATEGORY: "Choose a Call Reason in the same direction as this entry.",
+  REFERRAL_ID_REQUIRED: "Fill in at least REF ID, MR#, or CHART before logging.",
+  INVALID_PROVIDER: "Choose a To Provider from the list.",
 };
 
 export function errorCode(error: unknown): string | undefined {

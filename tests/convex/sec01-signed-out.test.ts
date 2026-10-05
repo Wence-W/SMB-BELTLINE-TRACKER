@@ -44,6 +44,9 @@ type Ids = {
   precertProviderId: string;
   storageId: string;
   billingEntryId: string;
+  intakeEntryId: string;
+  metricId: string;
+  referralId: string;
 };
 const SAMPLE_ARGS: Record<string, (ids: Ids) => Record<string, unknown>> = {
   "access:me": () => ({}),
@@ -87,6 +90,44 @@ const SAMPLE_ARGS: Record<string, (ids: Ids) => Record<string, unknown>> = {
     faxDocs: 1,
     newPatientIntake: 1,
   }),
+  // Phase 3
+  "dailyMetrics:deleteMetric": ids => ({ id: ids.metricId }),
+  "intake:listEntries": () => ({}),
+  "intake:logActivity": ids => ({
+    staffPersonId: ids.personId,
+    date: "2026-09-01",
+    category: "inquiries",
+    count: 1,
+    metrics: { emailsSent: 0, ghlChats: 0, newPatientIntake: 0, callAudits: 0, faxDocs: 0 },
+  }),
+  "intake:updateEntryDetails": ids => ({ id: ids.intakeEntryId, notes: "x" }),
+  "intake:deleteEntry": ids => ({ id: ids.intakeEntryId }),
+  "intake:resetEntries": () => ({}),
+  "intake:exportEntries": () => ({
+    filters: { date: "", from: "", to: "", staff: "", direction: "" },
+    exportFrom: "",
+    exportTo: "",
+  }),
+  "piedmont:listEntries": () => ({}),
+  "piedmont:addEntry": () => ({
+    date: "2026-09-01",
+    refId: "R1",
+    mrNumber: "",
+    chart: "",
+    toProvider: "",
+    referringProvider: "",
+  }),
+  "piedmont:updateEntry": ids => ({
+    id: ids.referralId,
+    date: "2026-09-01",
+    refId: "R1",
+    mrNumber: "",
+    chart: "",
+    toProvider: "",
+    referringProvider: "",
+  }),
+  "piedmont:resetEntries": () => ({}),
+  "piedmont:exportEntries": () => ({}),
 };
 
 describe("SEC-01: no public function is callable signed out", () => {
@@ -118,6 +159,33 @@ describe("SEC-01: no public function is callable signed out", () => {
             date: "2026-09-01",
             category: "emails",
             tasksCompleted: 1,
+            createdAt: "2026-09-01T00:00:00.000Z",
+          }),
+          intakeEntryId: await ctx.db.insert("intakeEntries", {
+            staff: "S",
+            date: "2026-09-01",
+            direction: "inbound",
+            category: "inquiries",
+            count: 1,
+            createdAt: "2026-09-01T00:00:00.000Z",
+          }),
+          metricId: await ctx.db.insert("intakeDailyMetrics", {
+            staff: "S",
+            date: "2026-09-01",
+            emailsSent: 1,
+            ghlChats: 0,
+            newPatientIntake: 0,
+            callAudits: 0,
+            faxDocs: 0,
+            updatedAt: "2026-09-01T00:00:00.000Z",
+          }),
+          referralId: await ctx.db.insert("piedmontEpicReferrals", {
+            date: "2026-09-01",
+            refId: "R",
+            mrNumber: "",
+            chart: "",
+            toProvider: "",
+            referringProvider: "",
             createdAt: "2026-09-01T00:00:00.000Z",
           }),
         };

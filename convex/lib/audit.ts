@@ -22,6 +22,10 @@ export const AUDITED_TABLES = [
   // Phase 2
   "billingEntries",
   "intakeDailyMetrics",
+  // Phase 3
+  "intakeEntries",
+  "piedmontEpicReferrals",
+  "intakeReportExclusions",
 ] as const satisfies readonly TableNames[];
 
 const SYSTEM_FIELDS = new Set(["_id", "_creationTime"]);

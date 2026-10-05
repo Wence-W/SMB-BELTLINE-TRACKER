@@ -66,4 +66,4 @@ The original looked up category labels on a plain object. A category named like 
 
 ## Next
 
-**Phase 3 needs the owner's written approval.** Still open: G0, the reference project, the history rewrite on `main`, and decisions D1, D2, D3 (urgent: F1 and F2), D8, D10, P1-a, P1-b and P2-a to P2-c.
+**Phase 3 was approved; see PHASE3.md.** Still open: G0, the reference project, the history rewrite on `main`, and decisions D1, D2, D3 (urgent: F1 and F2), D8, D10, P1-a, P1-b and P2-a to P2-c.
